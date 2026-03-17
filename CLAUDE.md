@@ -10,7 +10,8 @@ Building a language model from scratch in Python — for learning and fun, but w
 - Implement all core components from scratch: tokenizer, attention, transformer blocks, training loop
 - Architecture: **decoder-only transformer** (GPT-style, causal self-attention)
 - Tasks are defined at inference time via prompting — no hardcoded task heads
-- Optimize for small model size and fast inference — this will run on modest hardware
+- Target ~50–125M parameters — trains and runs comfortably on M4 MacBook via MPS backend
+- Use `torch.device("mps")` for Apple Silicon acceleration; fall back to `cpu`
 - Keep modules small and focused; one concept per file
 
 ## Structure (evolving)

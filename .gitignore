@@ -7,4 +7,8 @@ build/
 *.ckpt
 *.pt
 data/
+checkpoints/
+.venv/
 firebase-debug.log
+memory/
+.venv

@@ -2,3 +2,5 @@ numpy
 torch
 typer
 rich
+regex       # for BPE tokenizer
+datasets    # for loading/streaming training data

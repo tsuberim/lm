@@ -2,16 +2,18 @@
 
 ## Project
 
-Building a language model from scratch in Python. The goal is clarity and correctness over performance — every piece should be understandable and well-motivated.
+Building a small, practical language model from scratch in Python — targeting **format translation** (e.g. JSON↔YAML, NL→SQL) and **classification** tasks. Efficient and useful, not a demo.
 
 ## Principles
 
-- Prefer numpy/pure Python for core components; reach for PyTorch only when needed
-- No HuggingFace or high-level LM libraries — implement from first principles
+- PyTorch for tensor ops; no HuggingFace `transformers` or high-level LM libraries
+- Implement all core components from scratch: tokenizer, attention, transformer blocks, training loop
+- Architecture: **encoder-decoder transformer** (better fit for translation than decoder-only)
+- Optimize for small model size and fast inference — this will run on modest hardware
 - Keep modules small and focused; one concept per file
-- Prefer explicit math over clever abstractions
 
 ## Structure (evolving)
 
 - `cli.py` — CLI entry point (train, eval, generate)
-- `docs/` — design notes, architecture decisions, experiment logs
+- `lm/` — model source (tokenizer, model, trainer, data)
+- `docs/` — architecture decisions, experiment logs

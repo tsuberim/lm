@@ -1,19 +1,15 @@
 """
-Training loop.
-
-- AdamW optimizer, flat learning rate
-- Cosine LR warmup then flat (or just flat if warmup=0)
-- Gradient clipping
-- MPS / CUDA / CPU device auto-selection
-- Periodic eval on validation set
-- Checkpoint saving
+Training loop: AdamW, flat LR, grad clip, MPS/CUDA/CPU.
 """
 
-import time
 import numpy as np
 import torch
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
+from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn, MofNCompleteColumn
+from rich.live import Live
+from rich.table import Table
+from rich import print
 
 from .model import GPT, ModelConfig
 
@@ -52,17 +48,14 @@ def _get_batch(data: np.ndarray, cfg: TrainConfig, device: torch.device):
 @torch.no_grad()
 def _eval(model: GPT, data: np.ndarray, cfg: TrainConfig, device: torch.device) -> float:
     model.eval()
-    losses = [
-        model(*_get_batch(data, cfg, device))[1].item()
-        for _ in range(cfg.eval_steps)
-    ]
+    losses = [model(*_get_batch(data, cfg, device))[1].item() for _ in range(cfg.eval_steps)]
     model.train()
     return sum(losses) / len(losses)
 
 
 def train(model_cfg: ModelConfig, train_cfg: TrainConfig):
     device = get_device()
-    print(f"Device: {device}")
+    print(f"[bold]Device:[/bold] {device}")
 
     data_dir = Path(train_cfg.data_dir)
     train_data = np.fromfile(data_dir / "train.bin", dtype=np.uint16)
@@ -83,33 +76,41 @@ def train(model_cfg: ModelConfig, train_cfg: TrainConfig):
     ckpt_dir.mkdir(exist_ok=True)
 
     model.train()
-    t0 = time.time()
+    train_loss = 0.0
+    val_loss = float("nan")
 
-    for step in range(train_cfg.max_steps):
-        x, y = _get_batch(train_data, train_cfg, device)
-        _, loss = model(x, y)
-        loss.backward()
+    with Progress(
+        TextColumn("[bold cyan]Training[/]"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TextColumn("loss={task.fields[loss]:.4f} val={task.fields[val]:.4f}"),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("steps", total=train_cfg.max_steps, loss=float("nan"), val=float("nan"))
 
-        if train_cfg.grad_clip:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), train_cfg.grad_clip)
+        for step in range(train_cfg.max_steps):
+            x, y = _get_batch(train_data, train_cfg, device)
+            _, loss = model(x, y)
+            loss.backward()
 
-        optimizer.step()
-        optimizer.zero_grad()
+            if train_cfg.grad_clip:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), train_cfg.grad_clip)
 
-        if step % 100 == 0:
-            dt = time.time() - t0
-            print(f"step {step:5d} | loss {loss.item():.4f} | {dt:.1f}s")
-            t0 = time.time()
+            optimizer.step()
+            optimizer.zero_grad()
+            train_loss = loss.item()
 
-        if step % train_cfg.eval_interval == 0:
-            val_loss = _eval(model, val_data, train_cfg, device)
-            print(f"  val loss: {val_loss:.4f}")
+            if step % train_cfg.eval_interval == 0:
+                val_loss = _eval(model, val_data, train_cfg, device)
 
-        if step > 0 and step % train_cfg.checkpoint_interval == 0:
-            _save(model, optimizer, step, model_cfg, train_cfg, ckpt_dir / f"ckpt_{step:06d}.pt")
+            progress.update(task, advance=1, loss=train_loss, val=val_loss)
+
+            if step > 0 and step % train_cfg.checkpoint_interval == 0:
+                _save(model, optimizer, step, model_cfg, train_cfg, ckpt_dir / f"ckpt_{step:06d}.pt")
 
     _save(model, optimizer, train_cfg.max_steps, model_cfg, train_cfg, ckpt_dir / "ckpt_final.pt")
-    print("Done.")
+    print("[green]Done.[/green]")
     return model
 
 
@@ -121,4 +122,4 @@ def _save(model, optimizer, step, model_cfg, train_cfg, path):
         "model_cfg": model_cfg,
         "train_cfg": train_cfg,
     }, path)
-    print(f"  checkpoint -> {path}")
+    print(f"  [dim]checkpoint -> {path}[/dim]")

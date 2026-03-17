@@ -11,4 +11,4 @@ checkpoints/
 .venv/
 firebase-debug.log
 memory/
-.venv
+.venvtarget/

@@ -4,8 +4,9 @@ A language model built from scratch — no shortcuts, no magic, just math and co
 
 ## Goals
 
-- Implement a transformer-based LM from first principles
-- Keep dependencies minimal and the code readable
+- Build a transformer-based LM from first principles — for the joy of it
+- Target tasks where small models are genuinely useful: format translation, classification, NL→structured output
+- Keep the code readable and the math explicit
 - Document the journey in [`docs/`](docs/)
 
 ## Quickstart

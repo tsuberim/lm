@@ -2,7 +2,7 @@
 
 ## Project
 
-Building a small, practical language model from scratch in Python — targeting **format translation** (e.g. JSON↔YAML, NL→SQL) and **classification** tasks. Efficient and useful, not a demo.
+Building a language model from scratch in Python — for learning and fun, but with a real target: tasks where small models can genuinely compete. Think format translation (JSON↔YAML, NL→regex) and classification (intent, sentiment, NER). Not a toy demo, but also not pretending to be GPT.
 
 ## Principles
 
